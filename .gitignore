@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Streamlit specific
+.streamlit/credentials.toml
+.streamlit/secrets.toml
+
+# Massive raw data downloads
+data/geo_downloads/
+
+# Differential Expression CSV backups (Stored safely in midbase_de.db instead)
+de_results/
+
+# Temporary / testing files
+*.tsv
+test_*.csv
+test_enrichr_output.txt
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
