@@ -6,3 +6,5 @@ google-generativeai
 scikit-learn
 requests
 streamlit-agraph
+streamlit-option-menu
+
