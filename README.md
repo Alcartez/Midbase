@@ -37,4 +37,5 @@ This will allow you build a larger network
 
 This script is designed to take the massive MIDBASE master matrix and a new user's sample, and mathematically force the user's sample into the same technical space without altering the biological signature.
 
+The script is available in scripts/advanced_normalization.py
 
