@@ -537,7 +537,6 @@ if not gene_input or not search_btn:
         st.markdown("""
         **Search Tips:**
         - Enter complete gene symbols (e.g., TP53, BRCA1)
-        - Partial matches supported (e.g., "SOX" finds SOX9, SOX2, etc.)
         - Case insensitive
         
         **Interpreting Results:**
