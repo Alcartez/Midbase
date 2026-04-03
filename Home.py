@@ -237,7 +237,7 @@ if search_clicked and gene_query:
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; font-size: 0.9rem;">
-    <p>XY Counsel Platform | 9 Datasets | 301 Samples | 67,186 Genes</p>
+    <p>XY Counsel Platform | 9 Datasets | 302 Samples | 67,186 Genes</p>
     <p>Use the sidebar to navigate between pages</p>
 </div>
 """, unsafe_allow_html=True)
