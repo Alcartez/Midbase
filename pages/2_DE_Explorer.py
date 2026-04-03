@@ -1,5 +1,6 @@
 """
 Differential Expression Explorer - Volcano plots and heatmaps
+Updated to handle multiple comparisons per study and fix gene count discrepancies.
 """
 import streamlit as st
 import sqlite3
@@ -19,7 +20,7 @@ render_sidebar_nav("DE Explorer")
 
 st.title("Differential Expression Explorer")
 
-#Database connections
+# Database connections
 @st.cache_resource
 def get_de_db_connection():
     db_path = Path("midbase_de.db")
@@ -39,15 +40,26 @@ def get_studies():
     return df[~df['study_id'].isin(EXCLUDED)]
 
 @st.cache_data(ttl=3600)
-def get_de_results(study_id, p_threshold=1.0):
+def get_comparisons(study_id):
+    """Fetch unique comparisons for a specific study to prevent duplicate gene counts."""
+    conn = get_de_db_connection()
+    query = f"SELECT DISTINCT comparison FROM differential_expression WHERE study_id = '{study_id}'"
+    df = pd.read_sql_query(query, conn)
+    return df['comparison'].tolist()
+
+@st.cache_data(ttl=3600)
+def get_de_results(study_id, comparison, p_threshold=1.0):
+    """Fetch DE results filtered by both study and the specific comparison group."""
     conn = get_de_db_connection()
     sql = f"""
     SELECT gene_symbol, logFC, ave_expr, p_value, comparison
     FROM differential_expression
-    WHERE study_id = '{study_id}' AND p_value <= {p_threshold}
+    WHERE study_id = '{study_id}' 
+    AND comparison = ?
+    AND p_value <= {p_threshold}
     ORDER BY p_value
     """
-    return pd.read_sql_query(sql, conn)
+    return pd.read_sql_query(sql, conn, params=(comparison,))
 
 # Sidebar filters
 with st.sidebar:
@@ -59,6 +71,14 @@ with st.sidebar:
         studies['study_id'].tolist(),
         format_func=lambda x: f"{x} - {studies[studies['study_id']==x]['title'].iloc[0][:40]}"
     )
+
+    # Comparison Selector - Fixes the 67k vs 134k gene count issue
+    available_comparisons = get_comparisons(selected_study)
+    if available_comparisons:
+        selected_comparison = st.selectbox("Select Comparison Group", available_comparisons)
+    else:
+        selected_comparison = None
+        st.warning("No specific comparisons found for this study.")
     
     st.markdown("---")
     
@@ -81,14 +101,15 @@ with st.sidebar:
     st.markdown("---")
     show_labels = st.checkbox("Show gene labels (top 10)", value=False)
 
-# Load data
-de_data = get_de_results(selected_study, p_threshold)
+# Load data based on selection
+if selected_comparison:
+    de_data = get_de_results(selected_study, selected_comparison, p_threshold)
+else:
+    de_data = pd.DataFrame()
 
 if len(de_data) == 0:
-    st.warning(f"No differential expression results found for {selected_study}")
+    st.warning(f"No differential expression results found for {selected_study} ({selected_comparison})")
 else:
-    # Use p-value directly
-    
     # Apply logFC filter
     de_data_filtered = de_data[de_data['logFC'].abs() >= logfc_threshold].copy()
     
@@ -96,7 +117,7 @@ else:
         st.warning(f"No genes pass the logFC threshold of {logfc_threshold}")
     else:
         # Stats
-        st.subheader(f"{selected_study} - DE Results")
+        st.subheader(f"{selected_study} - {selected_comparison}")
         
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -129,7 +150,7 @@ else:
             hover_name='gene_symbol',
             hover_data={'p_value': ':.2e', 'logFC': ':.2f', 'ave_expr': ':.2f'},
             opacity=0.6,
-            title=f"Volcano Plot: {selected_study}",
+            title=f"Volcano Plot: {selected_study} ({selected_comparison})",
             labels={'logFC': 'Log2 Fold Change', 'p_value': 'P-value'}
         )
         
@@ -180,6 +201,6 @@ else:
         st.download_button(
             label=f"Download Top {top_n} Genes (CSV)",
             data=csv,
-            file_name=f"{selected_study}_top_{top_n}_genes.csv",
+            file_name=f"{selected_study}_{selected_comparison}_top_{top_n}_genes.csv",
             mime="text/csv"
         )
